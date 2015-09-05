@@ -1,0 +1,28 @@
+#! /usr/bin/gawk -f
+
+BEGIN {
+    for (i = 1; i <= 10; i++) {
+        arr[i] = int(i / 2);
+    }
+    print "***** not be uniqed.";
+    for (i in arr) {
+        print arr[i];
+    }
+    uniq_array(arr);
+    print "***** be uniqed.";
+    for (i in arr) {
+        print arr[i];
+    }
+}
+
+# uniq_array - sort array and uniq array
+#   input:  array
+#   output: sorted and uniqed array
+function uniq_array(arr,    i, n_arr) {
+    n_arr = asort(arr);
+    for (i = 1; i < n_arr; i++) {
+        if (arr[i] == arr[i + 1]) {
+            delete arr[i];
+        }
+    }
+}
