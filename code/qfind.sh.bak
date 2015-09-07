@@ -1,0 +1,33 @@
+#!/bin/bash
+
+qfind()
+{ 
+	# val
+	CDHIST_CDLOG=~/.cdhistlog
+	IFS=$'\n';
+	array=$( awk '!colname[$1]++{print $1}' $CDHIST_CDLOG )
+	#START=$(( $(echo "${array}" | wc -l)/2 ))
+	#END=$(echo "${array}" | wc -l)
+	#target=( $( echo "${array}" | head -n $END | tail -n $(($START - $END + 1)) ) )
+
+	# check arg
+	#if [ "$1" == '-a' ]; then
+	#	target=( $( echo "${array}" ) )
+	#	shift
+	#fi
+
+	# main
+	db=$(
+		for path in "${array[@]}"; do
+			find "$path" -maxdepth 1 -type f -iname *$1* 2> /dev/null;
+		done
+	)
+
+	shift
+	for i do
+		db=$(echo "${db}" | \grep -i "${i}")
+	done
+	echo "${db}"
+}
+
+qfind "$@"

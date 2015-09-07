@@ -1,0 +1,62 @@
+#! /bin/bash
+
+b_icons (){
+    bat_percent=`acpi | awk -F " " '{print $4}' | cut -d "," -f 1 $1 | sed s/%//g`
+    bat_acpi=`cat /sys/class/power_supply/BAT0/status`
+    bat_trun="$bat_percent"
+    color="$OPTARG"
+    if [ "$bat_acpi" == "Full" ]; then
+        icon=" ⮎ "
+    else
+        if [ "$bat_acpi" = "Discharging" ]; then
+            if [ "$bat_trun" -gt "50" ]; then
+                icon=" ⮏ "
+            elif  [ "$bat_trun" -le "50" ]; then
+                if [ "$bat_trun" -gt "20" ]; then
+                    icon=" ⮑ "
+                elif [ "$bat_trun" -lt "20" ]; then
+                    icon=" ⮐ "
+                fi  
+            fi  
+        elif [ "$bat_acpi" = "Charging" ]; then
+            icon=" ⮒ "
+        elif [ "$bat_acpi" = "Unknown" ]; then
+            icon=" ⮒ "
+        fi  
+    fi  
+
+    echo $icon
+
+}
+
+
+b_stats (){
+    bat_percent=`acpi | awk -F " " '{print $4}' | cut -d "," -f 1 $1`
+    bat_acpi=`cat /sys/class/power_supply/BAT0/status`
+    color="$OPTARG"
+    if [ "$bat_acpi" == "Full" ]; then
+        battery=" charged"
+    else
+        if [ "$bat_acpi" = "Discharging" ]; then
+            bat_state=" discharging @"
+        elif [ "$bat_acpi" = "Charging" ]; then
+            bat_state=" charging @"
+        elif [ "$bat_acpi" = "Unknown" ]; then
+            bat_state=" being silly @ "
+        fi
+        battery="$bat_state $bat_percent"
+    fi
+    echo $battery
+}
+
+
+
+while getopts "sia" opt; do
+    case $opt in
+        i)	b_icons ;;
+    s)	b_stats ;;
+a)	b_icons && b_stats ;;
+        *)	echo "not a valid option!" ;;
+    esac
+done
+
