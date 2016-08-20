@@ -1,0 +1,2 @@
+as:plugin, "use:{a,b}c"
+as:plugin, use:"{a,b}c"
