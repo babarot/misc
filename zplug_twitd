@@ -1,0 +1,109 @@
+#!/usr/bin/python
+
+from datetime import datetime as dt
+from tweepy import OAuthHandler
+from tweepy import Stream
+from tweepy.api import API
+from tweepy.auth import OAuthHandler
+from tweepy.streaming import StreamListener
+import datetime
+import json
+import os
+import requests
+import sys
+import time
+import tweepy
+
+def daemonize():
+    pid = os.fork()
+
+    if pid > 0:
+        #f = open('/var/log/zplug_twitd.pid', 'w')
+        #f.write(str(pid) + "\n")
+        #f.close()
+        sys.exit(0)
+
+    if pid == 0:
+        initialize()
+
+def post_to_slack(tweet):
+    payload = {
+            "channel": "#news",
+            "username": "Searcher of Tweets",
+            "icon_emoji": ":bird:",
+            "text": "@channel",
+            "attachments": [
+                {
+                    #"fallback": "Required plain-text summary of the attachment.",
+                    "color": "#55acee",
+                    #"pretext": "@channel",
+                    "author_name": "@" + tweet.author.screen_name,
+                    "author_link": "https://twitter.com/" + tweet.author.screen_name,
+                    "author_icon": tweet.author.profile_image_url_https,
+                    "title": tweet.author.name + "'s tweet!",
+                    "title_link": "https://twitter.com/" + tweet.author.screen_name + "/status/" + tweet.id_str,
+                    "text": tweet.text,
+                    "fields": [
+                        {
+                            "title": "Retweets",
+                            "value": tweet.retweet_count,
+                            "short": True
+                            },
+                        {
+                            "title": "Likes",
+                            "value": tweet.favorite_count,
+                            "short": True
+                            }
+                        ],
+                    #"image_url": tweet.author.profile_image_url_https,
+                    #"thumb_url": tweet.author.profile_image_url_https,
+                    "footer": "Twitter",
+                    "footer_icon": "http://www.freeiconspng.com/uploads/twitter-icon-download-18.png",
+                    "ts": time.mktime(tweet.created_at.timetuple())
+                    }
+                ]
+            }
+    url = "********************************************************************************"
+    payloadJson = json.dumps(payload)
+    requests.post(url, data=payloadJson)
+
+class MyException(Exception): pass
+
+class StreamListener(tweepy.streaming.StreamListener):
+    def __init__(self):
+        super(StreamListener, self).__init__()
+
+    def __del__(self): pass
+
+    def on_status(self, status):
+        post_to_slack(status)
+        #print status
+        return True
+
+    def on_error(self, status): pass
+        #print "can't get"
+
+    def on_timeout(self):
+        raise MyException
+
+def get_oauth():
+    consumer_key = "********************************************************************************"
+    consumer_secret = "********************************************************************************"
+    access_token = "********************************************************************************"
+    access_token_secret = "********************************************************************************"
+    auth = OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    return auth
+
+def initialize():
+    auth = get_oauth()
+    stream = tweepy.Stream(auth, StreamListener())
+    while True :
+        try:
+            stream.filter(track=['zplug'])
+        except MyException() :
+            time.sleep(60)
+            stream = tweepy.Stream(auth, StreamListener())
+
+if __name__ == '__main__':
+    daemonize()

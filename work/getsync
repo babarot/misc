@@ -1,0 +1,51 @@
+#!/bin/zsh
+
+local -a opts
+local    from to
+local    arg
+local    is_upload=false is_download=false
+
+from="${PWD:A}"
+while (( $# > 0 ))
+do
+    arg="$1"
+    case "$arg" in
+        -u|--upload)
+            is_upload=true
+            ;;
+        -d|--download)
+            is_download=true
+            ;;
+        -*|--*)
+            opts=( "$arg" )
+            ;;
+        *)
+            if [[ -d $arg ]]; then
+                from="${arg:A}"
+            else
+                echo 'no' >&2
+                exit 1
+            fi
+    esac
+    shift
+done
+
+if ! $is_upload && ! $is_download; then
+    echo ""
+    exit 1
+fi
+
+from="$from/"
+to="${from//$HOME/~}"
+
+echo "FROM: $from"
+echo "  TO: $to"
+echo -en "Press Ctrl-C to cancel> "
+read
+
+rsync \
+    --progress \
+    --exclude='.git' \
+    -auvr $opts[@] \
+    "$from" \
+    skr1:"$to"
