@@ -1,0 +1,67 @@
+#!/bin/bash
+
+trap 'kill -9 ${pids[@]} #&>/dev/null' EXIT INT
+
+any() {
+    for pid in "$@"
+    do
+        if kill -0 $pid &>/dev/null; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+stress_cpu() {
+    yes >/dev/null
+}
+
+stress_memory() {
+    /dev/null < $(yes)
+}
+
+if [[ -z $BASH_VERSION ]]; then
+    echo "" >&2
+    exit 1
+fi
+
+is_stress_cpu=false
+is_stress_memory=false
+parallel=1
+pids=()
+
+while (( $# > 0 ))
+do
+    case "$1" in
+        -c|--cpu)
+            action=stress_cpu
+            ;;
+        -m|--memory)
+            action=stress_memory
+            ;;
+        -P)
+            parallel="$2"
+            if [[ ! $parallel =~ ^[0-9]+$ ]]; then
+                echo "$parallel: is not numeric" >&2
+                exit 1
+            fi
+            ;;
+    esac
+    shift
+done
+
+cnt=0
+while (( (++cnt) <= $parallel ))
+do
+    # sleep $(($RANDOM % 6 + 1)) & pids+=($!)
+    $action & pids+=($!)
+done
+echo ${pids[@]}
+wait
+
+# while any ${pids[@]}
+# do
+#     clear
+#     ps u -p ${pids[@]}
+#     sleep 1
+# done

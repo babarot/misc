@@ -1,0 +1,111 @@
+diff --git a/app/controllers/anti_social_controller.php b/app/controllers/anti_social_controller.php
+new file mode 100644
+index 0000000..eda785e
+--- /dev/null
++++ b/app/controllers/anti_social_controller.php
+@@ -0,0 +1,31 @@
++<?php
++
++use Mercari\Intl\Locale;
++
++class AntiSocialController extends AppController
++{
++    public function save()
++    {
++        $anti_social = null;
++        if (Locale::getRegion() === 'JP' && Client::isSupportingAntiSocialCheck()) {
++            $params = [
++                'user_id'           => Param::get('user_id'),
++                'birthday'          => Param::get('birthday'),
++                'prefecture'        => Param::get('prefecture'),
++                'city'              => Param::get('city'),
++                'address1'          => Param::get('address1'),
++                'address2'          => Param::get('address2', ""),
++                'family_name_kanji' => Param::get('family_name_kanji'),
++                'first_name_kanji'  => Param::get('first_name_kanji'),
++                'family_name_kana'  => Param::get('family_name_kana'),
++                'first_name_kana'   => Param::get('first_name_kana'),
++                'address_id'        => 0, // cannot be given as a parameter
++            ];
++            $anti_social = new AntiSocial($params);
++            $anti_social->save();
++        }
++        $this->set([
++            'anti_social' => $anti_social,
++        ]);
++    }
++}
+diff --git a/app/models/anti_social.php b/app/models/anti_social.php
+index 510b000..ff81cd9 100644
+--- a/app/models/anti_social.php
++++ b/app/models/anti_social.php
+@@ -45,13 +45,13 @@ class AntiSocial extends BaseOrm implements JsonSerializable
+     protected $prefecture;
+     protected $city;
+     protected $address1;
+-    protected $address2;
++    protected $address2 = "";
+     protected $send_times = 0;
+     protected $family_name_kanji;
+     protected $first_name_kanji;
+     protected $family_name_kana;
+     protected $first_name_kana;
+-    protected $address_id;
++    protected $address_id = null;
+ 
+     public $validation = [
+         'user_id' => [
+@@ -99,16 +99,20 @@ class AntiSocial extends BaseOrm implements JsonSerializable
+ 
+     public function save()
+     {
+-        $address = $this->getAddress();
++        if ($this->address_id === 0) {
++            // none
++        } else {
++            $address = $this->getAddress();
+ 
+-        $this->prefecture = $address->getPrefecture();
+-        $this->city = $address->getCity();
+-        $this->address1 = $address->getAddress1();
+-        $this->address2 = $address->getAddress2();
+-        $this->family_name_kanji = $address->getFamilyName();
+-        $this->first_name_kanji = $address->getFirstName();
+-        $this->family_name_kana = $address->getFamilyNameKana();
+-        $this->first_name_kana = $address->getFirstNameKana();
++            $this->prefecture = $address->getPrefecture();
++            $this->city = $address->getCity();
++            $this->address1 = $address->getAddress1();
++            $this->address2 = $address->getAddress2();
++            $this->family_name_kanji = $address->getFamilyName();
++            $this->first_name_kanji = $address->getFirstName();
++            $this->family_name_kana = $address->getFamilyNameKana();
++            $this->first_name_kana = $address->getFirstNameKana();
++        }
+ 
+         if (! $this->checkIfRecordAlreadyExists()) {
+             parent::save();
+@@ -117,6 +121,10 @@ class AntiSocial extends BaseOrm implements JsonSerializable
+ 
+     public function jsonSerialize()
+     {
++        if ($this->address_id === 0) {
++            return [];
++        }
++
+         $address = $this->getAddress();
+ 
+         return [
+diff --git a/app/views/anti_social/save.php b/app/views/anti_social/save.php
+new file mode 100644
+index 0000000..5ba4d8d
+--- /dev/null
++++ b/app/views/anti_social/save.php
+@@ -0,0 +1,7 @@
++<?php
++/**
++ * @var AntiSocial $anti_social
++ */
++$data = [
++    'anti_social' => $anti_social,
++];
