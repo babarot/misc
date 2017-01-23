@@ -1,0 +1,16 @@
+#autoload
+
+repos=( ${(u@f)"$(<"$_zplug_load_log[success]")"} )
+
+if (( $#argv > 0 )); then
+    if (( $repos[(I)$argv[1]] )); then
+        return 0
+    else
+        return 1
+    fi
+fi
+
+for repo in $repos
+do
+    echo $repo
+done
